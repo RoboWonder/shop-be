@@ -1,5 +1,16 @@
 # Lumen PHP Framework
 
+## Shop-be:
+- Information:
+  - Lumen: 7.x
+  - Php: 7.x
+  - Mysql: 5.x
+- How to run server:
+  - php -S localhost:8000 -t public
+
+##
+##
+
 [![Build Status](https://travis-ci.org/laravel/lumen-framework.svg)](https://travis-ci.org/laravel/lumen-framework)
 [![Total Downloads](https://poser.pugx.org/laravel/lumen-framework/d/total.svg)](https://packagist.org/packages/laravel/lumen-framework)
 [![Latest Stable Version](https://poser.pugx.org/laravel/lumen-framework/v/stable.svg)](https://packagist.org/packages/laravel/lumen-framework)
