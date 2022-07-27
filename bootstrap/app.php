@@ -34,8 +34,9 @@ $app->alias('mailer', Illuminate\Contracts\Mail\MailQueue::class);
 
 $app->routeMiddleware([
     'auth' => App\Http\Middleware\Authenticate::class,
-    'jwt-auth' => \App\Http\Middleware\JWTAuthenticate::class]
-);
+    'jwt-auth' => \App\Http\Middleware\JWTAuthenticate::class,
+    'verify-email' => \App\Http\Middleware\VerifyEmail::class
+]);
 
 $app->register(App\Providers\AuthServiceProvider::class);
 

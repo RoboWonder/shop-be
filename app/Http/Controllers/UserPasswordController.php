@@ -4,34 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Jobs\SendPasswordEmail;
 use App\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class UserPasswordController extends UserAuthController
 {
-    /***
-     * make a temporary password string.
-     *
-     * @param int $length
-     *
-     * @return string
-     * @throws \Exception
-     * @since: 2022/07/26 23:32
-     */
-    private function _randomPassword(int $length = 8) {
-        $string = '';
-
-        while (($len = strlen($string)) < $length) {
-            $size = $length - $len;
-
-            $bytes = random_bytes($size);
-
-            $string .= substr(str_replace(['/', '+', '='], '', base64_encode($bytes)), 0, $size);
-        }
-
-        return $string;
-    }
-
     /***
      * request a temporary password
      *
@@ -49,38 +30,30 @@ class UserPasswordController extends UserAuthController
         $credentials = $request->only(['email']);
 
         $user = User::whereEmail($credentials['email'])->first();
-        if (! $user) return false;
-
-        function strRandom($length) {
-            $string = '';
-
-            while (($len = strlen($string)) < $length) {
-                $size = $length - $len;
-
-                $bytes = random_bytes($size);
-
-                $string .= substr(str_replace(['/', '+', '='], '', base64_encode($bytes)), 0, $size);
-            }
-
-            return $string;
+        if (!$user) {
+            return FALSE;
         }
 
-        $tmpPassword = $this->_randomPassword();
+        $tmpPassword = Str::random(8);
+
+        $hash = Hash::make($tmpPassword);
 
         DB::table('shopbe_password_reset')->whereEmail($credentials['email'])->delete();
 
         DB::table('shopbe_password_reset')->insert([
             'email' => $credentials['email'],
-            'token' => $tmpPassword,
+            'token' => $hash,
             'created_at' => date('Y-m-d H:i:s')
         ]);
 
         dispatch(new SendPasswordEmail($user, $tmpPassword));
 
         return response()->json([
-            'success' => true,
-            'data' => [
-                'message' => 'We\'ve sent you a temporary password to your email'
+            'success' => TRUE,
+            'message' => 'shopbe_sent_email',
+            'data'  => [ // for testing
+                'pw' => $tmpPassword,
+                'hash'  => $hash
             ]
         ]);
     }
@@ -94,7 +67,30 @@ class UserPasswordController extends UserAuthController
      */
     public function reset(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'token' => ['required', 'string']
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => FALSE,
+                'message' => 'shopbe_wrong_information',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::where(['email' => $request->email, 'login_token' => $request->token]);
+
+        $user->update(['password' => Hash::make($request->password), 'login_token' => NULL]);
+
+        DB::table('shopbe_password_reset')->whereEmail($request->email)->delete();
+
+        return new JsonResponse([
+            'success' => TRUE,
+            'message' => "shopbe_password_updated"
+        ], 200);
     }
 }
 

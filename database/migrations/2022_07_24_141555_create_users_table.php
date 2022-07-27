@@ -18,10 +18,10 @@ class CreateUsersTable extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            $table->string('auth_token')->nullable();
-            $table->string('login_token')->nullable();
-            $table->string('email_token');
-            $table->boolean('isVerified')->default(false);
+            $table->string('auth_token')->nullable();  // jwt token
+            $table->string('login_token')->nullable();  // reset password token
+            $table->string('email_token'); // email verify token
+            $table->boolean('verified')->default(false);
             $table->string('phone_number');
             $table->timestamps();
         });

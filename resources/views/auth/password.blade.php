@@ -8,8 +8,8 @@
 <h1>Hello, {{$email}}</h1>
 
 <p>
-    Your temporary password is: {{ $pwd }}<br /> This will expire in {{
-		config('auth.reminder.expire', 60) }} minutes.
+    Your temporary password is: <b>{{ $pwd }}</b> <br />
+    This password will expire in {{ config('auth.reminder.expire', 5) }} minutes.
 </p>
 
 <h2>Thanks & Regards,</h2>
