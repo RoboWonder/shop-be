@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SendVerificationEmail;
+use App\Services\UserAuthService;
 use App\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -15,11 +16,11 @@ use Tymon\JWTAuth\JWTAuth;
 
 class UserAuthController extends Controller
 {
-    protected $jwt;
+    protected $userAuthService;
 
-    public function __construct(JWTAuth $jwt)
+    public function __construct(UserAuthService $userAuthService)
     {
-        $this->jwt = $jwt;
+        $this->userAuthService = $userAuthService;
     }
 
     /***
@@ -44,36 +45,23 @@ class UserAuthController extends Controller
             list($username) = explode('@', $email);
         }
 
-        $user = new User;
-        $user->username = $username;
-        $user->email = $email;
-        $user->password = Hash::make($request->input('password'));
-        $user->phone_number = $request->input('phone_number');
-        $user->email_token = base64_encode('TOKEN:' . $email);
-
-        if ($request->has(['name'])) {
-            $user->name = $request->input('name');
-        }
-        else {
-            $user->name = $username;
-        }
-
         try {
-            if (!$user->save()) {
-                return response()->json([
-                    'success' => FALSE,
-                    'message' => 'shopbe_failure_created_user',
-                ]);
+            $user = $this->userAuthService->register([
+                'username' => $username,
+                'email' => $email,
+                'phone_number' => $request->input('phone_number'),
+                'name' => $request->has(['name']) ? $request->input('name') : $username
+            ]);
+
+            if (!$user || !$user->exists){
+                throw new \Exception("shopbe_failure_created_user");
             }
-        } catch (QueryException $exception) {
+        } catch (\Exception $e){
             return response()->json([
                 'success' => FALSE,
-                'message' => 'shopbe_duplicated_email',
-            ], 200);
+                'message' => $e->getMessage(),
+            ]);
         }
-
-        // send email to confirm here.
-        dispatch(new SendVerificationEmail($user));
 
         return response()->json([
             'success' => TRUE,
@@ -90,18 +78,21 @@ class UserAuthController extends Controller
      * @return \Illuminate\Http\JsonResponse|void
      * @since: 2022/07/25 23:16
      */
-    public function verifyEmail($token)
+    public function verifyEmail(string $token)
     {
-        $user = User::where('email_token', $token)->firstOrFail();
-        $user->verified = TRUE;
-        $user->email_token = NULL;
+        $ok = $this->userAuthService->verifyEmail($token);
 
-        if ($user->save()) {
+        if (!$ok){
             return response()->json([
                 'success' => TRUE,
-                'message' => 'shopbe_user_verified',
-            ], 200);
+                'message' => 'shopbe_user_failure_verified',
+            ]);
         }
+
+        return response()->json([
+            'success' => TRUE,
+            'message' => 'shopbe_user_verified',
+        ]);
     }
 
     /***
