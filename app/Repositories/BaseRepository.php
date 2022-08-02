@@ -106,7 +106,7 @@ abstract class BaseRepository implements RepositoryInterface
         $model = $this->model->get($columns);
         $this->resetModel();
 
-        return $model->get();
+        return $model;
     }
 
     public function update(array $attributes, $id)

@@ -36,6 +36,10 @@ class UserAuthService
         $this->userPasswordResetRepository = $userPasswordResetRepository;
     }
 
+    public function makeTokenInvalid(string $token){
+        $this->jwt->setToken($token)->invalidate();
+    }
+
     /***
      * register
      *
@@ -109,13 +113,13 @@ class UserAuthService
     {
         try {
             $user = $this->userRepository->findWhere(['email' => $email])->first();
-            if(!($user->exists && $user->verified == 1)){
+            if(!($user && $user->exists && $user->verified === 1)){
                 throw new \Exception('shopbe_must_verify_email');
             }
 
             $reset = $this->userPasswordResetRepository->findWhere([
                 ['email', '=', $email],
-                ['created_at', '>', Carbon::now()->subMinute(5)->format("Y-m-d H:i:s")]
+                ['created_at', '>', Carbon::now()->subMinute(config('auth.reminder.expire', 5))->format("Y-m-d H:i:s")]
             ])->first();
 
             if(!!$reset){
@@ -160,8 +164,8 @@ class UserAuthService
      */
     public function doLogout(string $token)
     {
-        $user = $this->userRepository->findWhere(['auth_token', $token])->first();
-        if (!$user->exists) {
+        $user = $this->userRepository->findWhere(['auth_token' => $token])->first();
+        if (!$user || !$user->exists) {
             throw new \Exception('shopbe_user_not_found');
         }
 
@@ -170,6 +174,6 @@ class UserAuthService
             throw new \Exception('shopbe_user_system_error');
         }
 
-        $this->jwt->setToken($token)->invalidate();
+        $this->makeTokenInvalid($token);
     }
 }
