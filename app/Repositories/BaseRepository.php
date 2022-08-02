@@ -11,7 +11,6 @@ namespace App\Repositories;
 use App\Contracts\RepositoryInterface;
 use Closure;
 use Illuminate\Container\Container as Application;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class BaseRepository implements RepositoryInterface
@@ -54,7 +53,7 @@ abstract class BaseRepository implements RepositoryInterface
         $model = $this->app->make($this->model());
 
         if (!$model instanceof Model) {
-            throw new RepositoryException("Class {$this->model()} must be an instance of Illuminate\\Database\\Eloquent\\Model");
+            throw new \Exception("Class {$this->model()} must be an instance of Illuminate\\Database\\Eloquent\\Model");
         }
 
         return $this->model = $model;
@@ -110,80 +109,16 @@ abstract class BaseRepository implements RepositoryInterface
         return $model->get();
     }
 
-    /**
-     * Update a entity in repository by id
-     *
-     * @param array $attributes
-     * @param       $id
-     *
-     * @return mixed
-     * @throws ValidatorException
-     *
-     */
     public function update(array $attributes, $id)
     {
-        $this->applyScope();
 
-        if (!is_null($this->validator)) {
-            // we should pass data that has been casts by the model
-            // to make sure data type are same because validator may need to use
-            // this data to compare with data that fetch from database.
-            $model = $this->model->newInstance();
-            $model->setRawAttributes([]);
-            $model->setAppends([]);
-            if ($this->versionCompare($this->app->version(), "5.2.*", ">")) {
-                $attributes = $model->forceFill($attributes)->makeVisible($this->model->getHidden())->toArray();
-            }
-            else {
-                $model->forceFill($attributes);
-                $model->makeVisible($this->model->getHidden());
-                $attributes = $model->toArray();
-            }
-
-            $this->validator->with($attributes)->setId($id)->passesOrFail(ValidatorInterface::RULE_UPDATE);
-        }
-
-        $temporarySkipPresenter = $this->skipPresenter;
-
-        $this->skipPresenter(TRUE);
-
-        $model = $this->model->findOrFail($id);
-
-        event(new RepositoryEntityUpdating($this, $model));
-
-        $model->fill($attributes);
-        $model->save();
-
-        $this->skipPresenter($temporarySkipPresenter);
-        $this->resetModel();
-
-        event(new RepositoryEntityUpdated($this, $model));
-
-        return $this->parserResult($model);
     }
 
-    /**
-     * Update or Create an entity in repository
-     *
-     * @param array $attributes
-     * @param array $values
-     *
-     * @return mixed
-     * @throws ValidatorException
-     *
-     */
     public function updateOrCreate(array $attributes, array $values = [])
     {
 
     }
 
-    /**
-     * Delete multiple entities by given criteria.
-     *
-     * @param array $where
-     *
-     * @return int
-     */
     public function deleteWhere(array $where)
     {
         $this->applyConditions($where);
@@ -195,13 +130,6 @@ abstract class BaseRepository implements RepositoryInterface
         return $deleted;
     }
 
-    /**
-     * Check if entity has relation
-     *
-     * @param string $relation
-     *
-     * @return $this
-     */
     public function has($relation)
     {
         $this->model = $this->model->has($relation);
@@ -260,11 +188,11 @@ abstract class BaseRepository implements RepositoryInterface
                 else $operator = NULL;
                 switch (strtoupper($condition)) {
                     case 'IN':
-                        if (!is_array($val)) throw new RepositoryException("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereIn($field, $val);
                         break;
                     case 'NOTIN':
-                        if (!is_array($val)) throw new RepositoryException("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereNotIn($field, $val);
                         break;
                     case 'DATE':
@@ -284,39 +212,39 @@ abstract class BaseRepository implements RepositoryInterface
                         $this->model = $this->model->whereYear($field, $operator, $val);
                         break;
                     case 'EXISTS':
-                        if (!($val instanceof Closure)) throw new RepositoryException("Input {$val} must be closure function");
+                        if (!($val instanceof Closure)) throw new \Exception("Input {$val} must be closure function");
                         $this->model = $this->model->whereExists($val);
                         break;
                     case 'HAS':
-                        if (!($val instanceof Closure)) throw new RepositoryException("Input {$val} must be closure function");
+                        if (!($val instanceof Closure)) throw new \Exception("Input {$val} must be closure function");
                         $this->model = $this->model->whereHas($field, $val);
                         break;
                     case 'HASMORPH':
-                        if (!($val instanceof Closure)) throw new RepositoryException("Input {$val} must be closure function");
+                        if (!($val instanceof Closure)) throw new \Exception("Input {$val} must be closure function");
                         $this->model = $this->model->whereHasMorph($field, $val);
                         break;
                     case 'DOESNTHAVE':
-                        if (!($val instanceof Closure)) throw new RepositoryException("Input {$val} must be closure function");
+                        if (!($val instanceof Closure)) throw new \Exception("Input {$val} must be closure function");
                         $this->model = $this->model->whereDoesntHave($field, $val);
                         break;
                     case 'DOESNTHAVEMORPH':
-                        if (!($val instanceof Closure)) throw new RepositoryException("Input {$val} must be closure function");
+                        if (!($val instanceof Closure)) throw new \Exception("Input {$val} must be closure function");
                         $this->model = $this->model->whereDoesntHaveMorph($field, $val);
                         break;
                     case 'BETWEEN':
-                        if (!is_array($val)) throw new RepositoryException("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereBetween($field, $val);
                         break;
                     case 'BETWEENCOLUMNS':
-                        if (!is_array($val)) throw new RepositoryException("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereBetweenColumns($field, $val);
                         break;
                     case 'NOTBETWEEN':
-                        if (!is_array($val)) throw new RepositoryException("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereNotBetween($field, $val);
                         break;
                     case 'NOTBETWEENCOLUMNS':
-                        if (!is_array($val)) throw new RepositoryException("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereNotBetweenColumns($field, $val);
                         break;
                     case 'RAW':

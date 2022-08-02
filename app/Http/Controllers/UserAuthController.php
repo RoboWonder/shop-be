@@ -2,17 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\SendVerificationEmail;
 use App\Services\UserAuthService;
-use App\User;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
-use Tymon\JWTAuth\Exceptions\JWTException;
-use Tymon\JWTAuth\JWTAuth;
 
 class UserAuthController extends Controller
 {
@@ -34,8 +25,7 @@ class UserAuthController extends Controller
      */
     public function register(Request $request)
     {
-        $this->validate($request, ['email' => 'required|email', 'password' => 'required|min:6',]);
-
+        $this->validate($request, ['email' => 'required|email', 'password' => 'required|min:6']);
         $email = $request->input('email');
 
         if ($request->has(['username'])) {
@@ -46,16 +36,13 @@ class UserAuthController extends Controller
         }
 
         try {
-            $user = $this->userAuthService->register([
+            $user = $this->userAuthService->doRegister([
                 'username' => $username,
                 'email' => $email,
+                'password' => $request->input('password'),
                 'phone_number' => $request->input('phone_number'),
                 'name' => $request->has(['name']) ? $request->input('name') : $username
             ]);
-
-            if (!$user || !$user->exists){
-                throw new \Exception("shopbe_failure_created_user");
-            }
         } catch (\Exception $e){
             return response()->json([
                 'success' => FALSE,
@@ -65,7 +52,7 @@ class UserAuthController extends Controller
 
         return response()->json([
             'success' => TRUE,
-            'message' => 'shopbe_successfully_created_user',
+            'message' => 'shopbe_created_user_success',
             'data' => $user
         ]);
     }
@@ -80,19 +67,25 @@ class UserAuthController extends Controller
      */
     public function verifyEmail(string $token)
     {
-        $ok = $this->userAuthService->verifyEmail($token);
-
-        if (!$ok){
+        try {
+            $ok = $this->userAuthService->doVerifyEmail($token);
+            if($ok){
+                return response()->json([
+                    'success' => TRUE,
+                    'message' => 'shopbe_user_verified',
+                ]);
+            }
             return response()->json([
-                'success' => TRUE,
+                'success' => FALSE,
                 'message' => 'shopbe_user_failure_verified',
             ]);
         }
-
-        return response()->json([
-            'success' => TRUE,
-            'message' => 'shopbe_user_verified',
-        ]);
+        catch (\Exception $e){
+            return response()->json([
+                'success' => FALSE,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     /***
@@ -111,68 +104,35 @@ class UserAuthController extends Controller
             'password' => 'required'
         ]);
 
-        $user = User::where('email', $request->input('email'))->first();
-        if(!($user->exists() && $user->verified == 1)){
-            return response()->json(
-                [
-                    'success' => FALSE,
-                    'message' => 'shopbe_must_verify_email',
-                    'data' => [
-                        'must'  => 'VERIFY_EMAIL'
-                    ]
-                ],
-                401
-            );
-        }
-
-        $jwtAttempt = $request->only(['email', 'password']);
-
         try {
-            $count = (DB::table('shopbe_password_reset')
-                ->where('email', '=', $request->email))
-                ->where('created_at', '>', Carbon::now()->subMinute(5)->format("Y-m-d H:i:s"))
-                ->first();
+            list($loginType, $token) = $this->userAuthService->doLogin($request->email, $request->password);
 
-            if(!!$count){
-                if(Hash::check($request->password, $count->token)){
-                    $token = Hash::make(Str::random());
-
-                    $user = User::where('email', $request->input('email'))->first();
-                    $user->login_token = $token;
-                    $user->save();
-
-                    return response()->json([
-                        'success' => TRUE,
-                        'message' => 'shopbe_must_update_password',
-                        'data' => [
-                            'must' => 'SHOPBE_UPDATE_PASSWORD',
-                            'token' => $token
-                        ]
-                    ]);
-                }
-
+            if($loginType === UserAuthService::TYPE_LOGIN_TEMP){
                 return response()->json([
                     'success' => TRUE,
-                    'message' => 'shopbe_wrong_password'
+                    'message' => 'shopbe_must_update_password',
+                    'data' => [
+                        'must' => 'SHOPBE_UPDATE_PASSWORD',
+                        'token' => $token
+                    ]
                 ]);
             }
-            else{
-                if (!$token = $this->jwt->attempt($jwtAttempt)) {
-                    return response()->json(['user_not_found'], 404);
-                }
-
-                $user = User::where('email', $request->input('email'))->first();
-                $user->auth_token = $token;
-                $user->save();
+            else {
+                return response()->json([
+                    'success' => TRUE,
+                    'message' => 'shopbe_login_success',
+                    'data' => [
+                        'token' => $token
+                    ]
+                ]);
             }
-        } catch (JWTException $e) {
-            return response()->json([
-                'success' => TRUE,
-                'failed_to_create_token'
-            ], 500);
         }
-
-        return response()->json(compact('token'));
+        catch (\Exception $e){
+            return response()->json([
+                'success' => FALSE,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 
     /***
@@ -180,32 +140,26 @@ class UserAuthController extends Controller
      *
      * @param Request $request
      *
-     * @return \Illuminate\Http\JsonResponse|void
-     * @since: 2022/07/25 21:58
+     * @return \Illuminate\Http\JsonResponse
+     * @since: 2022/08/02 21:57
+     * @author: Hung <hung@hanbiro.com>
      */
     public function logout(Request $request)
     {
-        // Nulling all tokens and invalidate auth_token with JWT.
-        $token = substr($request->header('Authorization'), 7);
-
-        $user = User::where('auth_token', $token)->first();
-        if ($user === NULL) {
+        try {
+            $token = substr($request->header('Authorization'), 7);
+            $this->userAuthService->doLogout($token);
+        }
+        catch (\Exception $e){
             return response()->json([
                 'success' => FALSE,
-                'message' => "shopbe_user_not_found"
-            ], 404);
-        }
-
-        $user->auth_token = NULL;
-
-        if ($token != NULL) {
-            $this->jwt->setToken($token)->invalidate();
-            $user->save();
-
-            return response()->json([
-                'success' => TRUE,
-                'message' => "shopbe_user_logout_successfully"
+                'message' => $e->getMessage()
             ]);
         }
+
+        return response()->json([
+            'success' => TRUE,
+            'message' => "shopbe_user_logout_success"
+        ]);
     }
 }

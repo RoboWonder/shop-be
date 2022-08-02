@@ -15,18 +15,19 @@ use App\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use phpDocumentor\Reflection\Types\Boolean;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\JWTAuth;
 
 class UserAuthService
 {
-    protected $jwt;
-    protected $userRepository;
-    protected $userPasswordResetRepository;
+    const TYPE_LOGIN = 'TYPE_LOGIN';
+    const TYPE_LOGIN_TEMP = 'TYPE_LOGIN_TEMP';
+
+    private $jwt;
+    private $userRepository;
+    private $userPasswordResetRepository;
 
     public function __construct(JWTAuth $jwt, UserRepository $userRepository, UserPasswordResetRepository $userPasswordResetRepository)
     {
@@ -44,22 +45,25 @@ class UserAuthService
      * @throws \Exception
      * @since: 2022/07/25 23:13
      */
-    public function register(array $args): User
+    public function doRegister(array $args): User
     {
-        $user = new User;
-        $user->username = $args['username'];
-        $user->name = $args['name'];
-        $user->email = $args['email'];
-        $user->password = Hash::make($args['password']);
-        $user->phone_number = $args['phone_number'];
-        $user->email_token = base64_encode('TOKEN:' . $args['email']);
-
         try {
+            $user = new User;
+            $user->username = $args['username'];
+            $user->name = $args['name'];
+            $user->email = $args['email'];
+            $user->password = Hash::make($args['password']);
+            $user->phone_number = $args['phone_number'];
+            $user->email_token = base64_encode('TOKEN:' . $args['email']);
+
             if (!$user->save()) {
                 throw new \Exception('shopbe_failure_created_user');
             }
-        } catch (QueryException $exception) {
-            throw new \Exception("shopbe_duplicated_email");
+        } catch (\Exception $e) {
+            if ($e instanceof QueryException && (int)$e->getCode() === 23000) {
+                throw new \Exception('shopbe_user_duplicated_email');
+            }
+            throw $e;
         }
 
         // send email to confirm here.
@@ -69,45 +73,46 @@ class UserAuthService
     }
 
     /***
-     * verifyEmail
+     * doVerifyEmail
      *
-     * @param $token
+     * @param string $token
      *
      * @return bool
-     * @since: 2022/07/25 23:16
+     * @throws \Exception
+     * @author: Hung <hung@hanbiro.com>
+     * @since: 2022/08/02 22:33
      */
-    public function verifyEmail(string $token): bool
+    public function doVerifyEmail(string $token): bool
     {
-        $user = User::where('email_token', $token)->firstOrFail();
-        $user->verified = TRUE;
-        $user->email_token = NULL;
+        $user = $this->userRepository->findWhere(['email_token' => $token])->first();
+        if($user->exists){
+            $user->verified = TRUE;
+            $user->email_token = NULL;
+            return $user->save();
+        }
 
-        return $user->save();
-    }
-
-    private function loginOrLoginTemp($login, $loginTemp){
-        if ()P
+        throw new \Exception('shopbe_user_not_found');
     }
 
     /***
-     * login
+     * doLogin
      *
-     * @param Request $request
+     * @param string $email
+     * @param string $password
      *
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Illuminate\Validation\ValidationException
-     * @since: 2022/07/25 21:57
+     * @return array
+     * @throws JWTException
+     * @author: Hung <hung@hanbiro.com>
+     * @since: 2022/08/02 21:47
      */
-    public function login(string $email, string $password)
+    public function doLogin(string $email, string $password): array
     {
-        $user = $this->userRepository->findWhere(['email' => $email])->first();
-        if(!($user->exists() && $user->verified == 1)){
-            throw new \Exception('shopbe_must_verify_email', 401);
-        }
-
-        $jwtAttempt = compact('email', 'password');
-
         try {
+            $user = $this->userRepository->findWhere(['email' => $email])->first();
+            if(!($user->exists && $user->verified == 1)){
+                throw new \Exception('shopbe_must_verify_email');
+            }
+
             $reset = $this->userPasswordResetRepository->findWhere([
                 ['email', '=', $email],
                 ['created_at', '>', Carbon::now()->subMinute(5)->format("Y-m-d H:i:s")]
@@ -119,68 +124,52 @@ class UserAuthService
                     $user->login_token = $token;
                     $user->save();
 
-                    return response()->json([
-                        'success' => TRUE,
-                        'message' => 'shopbe_must_update_password',
-                        'data' => [
-                            'must' => 'SHOPBE_UPDATE_PASSWORD',
-                            'token' => $token
-                        ]
-                    ]);
+                    return [self::TYPE_LOGIN_TEMP, $token];
                 }
 
-                return response()->json([
-                    'success' => TRUE,
-                    'message' => 'shopbe_wrong_password'
-                ]);
+                throw new \Exception('shopbe_wrong_password');
             }
             else{
+                $jwtAttempt = compact('email', 'password');
                 if (!$token = $this->jwt->attempt($jwtAttempt)) {
-                    return response()->json(['user_not_found'], 404);
+                    throw new \Exception('user_not_found');
                 }
 
                 $user = User::where('email', $email)->first();
                 $user->auth_token = $token;
                 $user->save();
+
+                return [self::TYPE_LOGIN, $token];
             }
         } catch (JWTException $e) {
-            throw new \Exception('failed_to_create_token');
+            if ($e instanceof JWTException){
+                throw new \Exception('failed_to_create_token');
+            }
+            throw $e;
         }
-
-        return $token;
     }
 
     /***
-     * logout
+     * doLogout
      *
-     * @param Request $request
+     * @param string $token
      *
-     * @return \Illuminate\Http\JsonResponse|void
-     * @since: 2022/07/25 21:58
+     * @throws \Exception
+     * @since: 2022/08/02 21:56
+     * @author: Hung <hung@hanbiro.com>
      */
-    public function logout(Request $request)
+    public function doLogout(string $token)
     {
-        // Nulling all tokens and invalidate auth_token with JWT.
-        $token = substr($request->header('Authorization'), 7);
-
-        $user = User::where('auth_token', $token)->first();
-        if ($user === NULL) {
-            return response()->json([
-                'success' => FALSE,
-                'message' => "shopbe_user_not_found"
-            ], 404);
+        $user = $this->userRepository->findWhere(['auth_token', $token])->first();
+        if (!$user->exists) {
+            throw new \Exception('shopbe_user_not_found');
         }
 
         $user->auth_token = NULL;
-
-        if ($token != NULL) {
-            $this->jwt->setToken($token)->invalidate();
-            $user->save();
-
-            return response()->json([
-                'success' => TRUE,
-                'message' => "shopbe_user_logout_successfully"
-            ]);
+        if (!$user->save()){
+            throw new \Exception('shopbe_user_system_error');
         }
+
+        $this->jwt->setToken($token)->invalidate();
     }
 }
