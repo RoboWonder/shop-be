@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace App\Models;
 
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Laravel\Lumen\Auth\Authorizable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Model implements AuthenticatableContract, AuthorizableContract, JWTSubject, CanResetPasswordContract
+class UserModel extends Model implements AuthenticatableContract, AuthorizableContract, JWTSubject, CanResetPasswordContract
 {
     use Authenticatable, Authorizable, CanResetPassword, Notifiable;
 

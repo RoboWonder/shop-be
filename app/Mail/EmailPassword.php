@@ -6,8 +6,6 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-use App\User;
-
 class EmailPassword extends Mailable
 {
     use Queueable, SerializesModels;

@@ -6,7 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-use App\User;
+use App\Models\UserModel;
 
 class EmailVerification extends Mailable
 {
@@ -14,7 +14,7 @@ class EmailVerification extends Mailable
 
     protected $user;
 
-    public function __construct(User $user)
+    public function __construct(UserModel $user)
     {
         $this->user = $user;
     }

@@ -2,7 +2,7 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\User;
+use App\Models\UserModel;
 use Faker\Generator as Faker;
 
 /*
@@ -16,7 +16,7 @@ use Faker\Generator as Faker;
 |
 */
 
-$factory->define(User::class, function (Faker $faker) {
+$factory->define(UserModel::class, function (Faker $faker) {
     return [
         'name' => $faker->name,
         'email' => $faker->email,

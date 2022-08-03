@@ -12,6 +12,6 @@ class UserRepository extends BaseRepository
 {
     public function model()
     {
-        return "App\\User";
+        return "App\\Models\\UserModel";
     }
 }
