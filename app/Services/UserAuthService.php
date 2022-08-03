@@ -7,6 +7,7 @@
 
 namespace App\Services;
 
+use App\Constants\Message;
 use App\Jobs\SendVerificationEmail;
 use App\Repositories\UserPasswordResetRepository;
 use App\Repositories\UserRepository;
@@ -82,7 +83,6 @@ class UserAuthService
      *
      * @return bool
      * @throws \Exception
-     * @author: Hung <hung@hanbiro.com>
      * @since: 2022/08/02 22:33
      */
     public function doVerifyEmail(string $token): bool
@@ -105,7 +105,6 @@ class UserAuthService
      *
      * @return array
      * @throws JWTException
-     * @author: Hung <hung@hanbiro.com>
      * @since: 2022/08/02 21:47
      */
     public function doLogin(string $email, string $password): array
@@ -130,7 +129,7 @@ class UserAuthService
                     return [self::TYPE_LOGIN_TEMP, $token];
                 }
 
-                throw new \Exception('shopbe_wrong_password');
+                throw new \Exception(Message::ERR_SHOPBE_WRONG_INFORMATION);
             }
             else{
                 $jwtAttempt = compact('email', 'password');
@@ -158,7 +157,6 @@ class UserAuthService
      *
      * @throws \Exception
      * @since: 2022/08/02 21:56
-     * @author: Hung <hung@hanbiro.com>
      */
     public function doLogout(string $token)
     {
