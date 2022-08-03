@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Message;
 use App\Services\UserPasswordResetService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -62,20 +63,20 @@ class UserPasswordController extends UserAuthController
         if ($validator->fails()) {
             return response()->json([
                 'success' => FALSE,
-                'message' => 'shopbe_wrong_information',
+                'message' => Message::ERR_SHOPBE_WRONG_INFORMATION,
                 'errors' => $validator->errors()
             ], 422);
         }
 
         $ok = $this->userPasswordResetService->doReset($request->token, $request->email, $request->password);
         if (!$ok){
-            return new JsonResponse([
+            return response()->json([
                 'success' => FALSE,
                 'message' => "shopbe_password_updated_fail"
             ], 200);
         }
 
-        return new JsonResponse([
+        return response()->json([
             'success' => TRUE,
             'message' => "shopbe_password_updated_success"
         ], 200);

@@ -1,7 +1,6 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Hung <hunglt@hanbiro.vn>
  * Date: 2022-08-01
  * Time: 22:17
  */
@@ -76,7 +75,6 @@ class UserPasswordResetService
      *
      * @return bool
      * @since: 2022/08/02 23:12
-     * @author: Hung <hung@hanbiro.com>
      */
     public function doReset(string $token, string $email, string $password)
     {

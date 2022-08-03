@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Message;
 use App\Services\UserAuthService;
 use Illuminate\Http\Request;
 
@@ -52,7 +53,7 @@ class UserAuthController extends Controller
 
         return response()->json([
             'success' => TRUE,
-            'message' => 'shopbe_created_user_success',
+            'message' => Message::MSG_SHOPBE_CREATE_SUCCESS,
             'data' => $user
         ]);
     }
@@ -72,12 +73,12 @@ class UserAuthController extends Controller
             if($ok){
                 return response()->json([
                     'success' => TRUE,
-                    'message' => 'shopbe_user_verified',
+                    'message' => Message::MSG_SHOPBE_VERIFIED_SUCCESS,
                 ]);
             }
             return response()->json([
                 'success' => FALSE,
-                'message' => 'shopbe_user_failure_verified',
+                'message' => Message::MSG_SHOPBE_VERIFIED_FAIL,
             ]);
         }
         catch (\Exception $e){
@@ -142,7 +143,6 @@ class UserAuthController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      * @since: 2022/08/02 21:57
-     * @author: Hung <hung@hanbiro.com>
      */
     public function logout(Request $request)
     {

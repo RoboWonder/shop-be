@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Mail\EmailPassword;
-use App\User;
 
 use Illuminate\Support\Facades\Mail;
 

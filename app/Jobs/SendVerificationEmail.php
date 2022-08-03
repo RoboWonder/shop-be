@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\User;
+use App\Models\UserModel;
 
 use Illuminate\Support\Facades\Mail;
 use App\Mail\EmailVerification;
@@ -12,7 +12,7 @@ class SendVerificationEmail extends Job
     protected $user;
     public $tries = 5;
 
-    public function __construct(User $user)
+    public function __construct(UserModel $user)
     {
         $this->user = $user;
     }

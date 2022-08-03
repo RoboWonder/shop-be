@@ -7,10 +7,10 @@
 
 namespace App\Repositories;
 
-class UserRepository extends BaseRepository
+class ProductGroupRepository extends BaseRepository
 {
     public function model()
     {
-        return "App\\Models\\UserModel";
+        return "App\\Models\\ProductGroupModel";
     }
 }

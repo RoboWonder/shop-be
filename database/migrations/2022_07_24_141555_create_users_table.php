@@ -16,6 +16,7 @@ class CreateUsersTable extends Migration
         Schema::create('shopbe_user', function (Blueprint $table) {
             $table->increments('id');
             $table->string('name');
+            $table->string('username');
             $table->string('email')->unique();
             $table->string('password');
             $table->string('auth_token')->nullable();  // jwt token
@@ -34,6 +35,6 @@ class CreateUsersTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('shopbe_users');
+        Schema::dropIfExists('shopbe_user');
     }
 }

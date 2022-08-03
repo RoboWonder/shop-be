@@ -1,17 +1,17 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Hung <hunglt@hanbiro.vn>
  * Date: 2022-08-01
  * Time: 22:17
  */
 
 namespace App\Services;
 
+use App\Constants\Message;
 use App\Jobs\SendVerificationEmail;
 use App\Repositories\UserPasswordResetRepository;
 use App\Repositories\UserRepository;
-use App\User;
+use App\Models\UserModel;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -49,10 +49,10 @@ class UserAuthService
      * @throws \Exception
      * @since: 2022/07/25 23:13
      */
-    public function doRegister(array $args): User
+    public function doRegister(array $args): UserModel
     {
         try {
-            $user = new User;
+            $user = new UserModel();
             $user->username = $args['username'];
             $user->name = $args['name'];
             $user->email = $args['email'];
@@ -83,7 +83,6 @@ class UserAuthService
      *
      * @return bool
      * @throws \Exception
-     * @author: Hung <hung@hanbiro.com>
      * @since: 2022/08/02 22:33
      */
     public function doVerifyEmail(string $token): bool
@@ -106,7 +105,6 @@ class UserAuthService
      *
      * @return array
      * @throws JWTException
-     * @author: Hung <hung@hanbiro.com>
      * @since: 2022/08/02 21:47
      */
     public function doLogin(string $email, string $password): array
@@ -131,7 +129,7 @@ class UserAuthService
                     return [self::TYPE_LOGIN_TEMP, $token];
                 }
 
-                throw new \Exception('shopbe_wrong_password');
+                throw new \Exception(Message::ERR_SHOPBE_WRONG_INFORMATION);
             }
             else{
                 $jwtAttempt = compact('email', 'password');
@@ -139,7 +137,6 @@ class UserAuthService
                     throw new \Exception('user_not_found');
                 }
 
-                $user = User::where('email', $email)->first();
                 $user->auth_token = $token;
                 $user->save();
 
@@ -160,7 +157,6 @@ class UserAuthService
      *
      * @throws \Exception
      * @since: 2022/08/02 21:56
-     * @author: Hung <hung@hanbiro.com>
      */
     public function doLogout(string $token)
     {
