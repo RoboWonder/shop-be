@@ -1,7 +1,6 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Hung <hunglt@hanbiro.vn>
  * Date: 2022-08-03
  * Time: 22:56
  */
