@@ -18,6 +18,7 @@ class CreateProductGroupTable extends Migration
             $table->integer('parent_id')->default(0)->index();
             $table->string('name', 255);
             $table->integer('order')->default(0);
+            $table->enum('deleted', ['0', '1'])->default('0');
             $table->timestamps();
         });
     }
