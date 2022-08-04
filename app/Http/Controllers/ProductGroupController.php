@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Api;
 use App\Constants\Message;
 use App\Services\ProductGroupService;
 use Illuminate\Http\Request;
@@ -46,33 +47,64 @@ class ProductGroupController extends Controller
 
     public function list(Request $request)
     {
+        $page = $request->has('page') ? $request->page : NULL;
+        $size = $request->get('size', Api::LIST_DEFAULT_PAGING_SIZE);
+
+        list($rows, $paging, $err) = $this->productGroupService->getList([
+            'page' => $page,
+            'size' => $size
+        ]);
+        if ($err instanceof \Exception){
+            return response()->json([
+                'success' => FALSE,
+                'data' => [
+                    'paging' => $paging,
+                    'rows' => []
+                ],
+                'message' => $err->getMessage()
+            ]);
+        }
+
         return response()->json([
             'success' => TRUE,
+            'data' => [
+                'paging' => $paging,
+                'rows' => $rows
+            ],
             'message' => ''
         ]);
     }
 
-    public function view(Request $request, string $id)
+    public function update(Request $request, int $id)
     {
+        $err = $this->productGroupService->doUpdate($id, $request->only(['name', 'order']));
+        if ($err instanceof \Exception){
+            return response()->json([
+                'success' => FALSE,
+                'message' => $err->getMessage()
+            ]);
+        }
+
         return response()->json([
             'success' => TRUE,
-            'message' => ''
+            'message' => Message::MSG_SHOPBE_UPDATE_SUCCESS
         ]);
     }
 
-    public function update(Request $request)
+    public function delete(string $id, Request $request)
     {
-        return response()->json([
-            'success' => TRUE,
-            'message' => ''
-        ]);
-    }
+        $forceDelete = $request->get('force', '0');
+        $err = $this->productGroupService->doDelete($id, $forceDelete === '0');
+        if ($err instanceof \Exception){
+            return response()->json([
+                'success' => FALSE,
+                'message' => $err->getMessage()
+            ]);
+        }
 
-    public function delete(Request $request)
-    {
         return response()->json([
             'success' => TRUE,
-            'message' => ''
+            'message' => Message::MSG_SHOPBE_DELETE_SUCCESS
         ]);
     }
 }

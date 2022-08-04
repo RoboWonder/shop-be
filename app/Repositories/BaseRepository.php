@@ -9,6 +9,7 @@ namespace App\Repositories;
 
 use App\Contracts\RepositoryInterface;
 use Closure;
+use Exception;
 use Illuminate\Container\Container as Application;
 use Illuminate\Database\Eloquent\Model;
 
@@ -52,10 +53,15 @@ abstract class BaseRepository implements RepositoryInterface
         $model = $this->app->make($this->model());
 
         if (!$model instanceof Model) {
-            throw new \Exception("Class {$this->model()} must be an instance of Illuminate\\Database\\Eloquent\\Model");
+            throw new Exception("Class {$this->model()} must be an instance of Illuminate\\Database\\Eloquent\\Model");
         }
 
         return $this->model = $model;
+    }
+
+    public function all($columns = ['*'])
+    {
+        return $this->model->all($columns);
     }
 
     /**
@@ -108,14 +114,35 @@ abstract class BaseRepository implements RepositoryInterface
         return $model;
     }
 
-    public function update(array $attributes, $id)
+    public function update(array $data, $id, string $attribute = "id")
     {
+        $updated = $this->model
+            ->where($attribute, '=', $id)
+            ->update($data);
 
+        if (!$updated) {
+            throw new Exception(
+                "Update model {$this->model()} was unsuccessful"
+            );
+        }
+
+        return $updated;
     }
 
     public function updateOrCreate(array $attributes, array $values = [])
     {
 
+    }
+
+    public function delete($id)
+    {
+        $status = $this->model->destroy($id);
+        if (!$status && !is_array($id) && !empty($id)) {
+            throw new Exception(
+                "Unable to delete {$this->model()} with id: {$id}"
+            );
+        }
+        return $status;
     }
 
     public function deleteWhere(array $where)
@@ -187,11 +214,11 @@ abstract class BaseRepository implements RepositoryInterface
                 else $operator = NULL;
                 switch (strtoupper($condition)) {
                     case 'IN':
-                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereIn($field, $val);
                         break;
                     case 'NOTIN':
-                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereNotIn($field, $val);
                         break;
                     case 'DATE':
@@ -211,39 +238,39 @@ abstract class BaseRepository implements RepositoryInterface
                         $this->model = $this->model->whereYear($field, $operator, $val);
                         break;
                     case 'EXISTS':
-                        if (!($val instanceof Closure)) throw new \Exception("Input {$val} must be closure function");
+                        if (!($val instanceof Closure)) throw new Exception("Input {$val} must be closure function");
                         $this->model = $this->model->whereExists($val);
                         break;
                     case 'HAS':
-                        if (!($val instanceof Closure)) throw new \Exception("Input {$val} must be closure function");
+                        if (!($val instanceof Closure)) throw new Exception("Input {$val} must be closure function");
                         $this->model = $this->model->whereHas($field, $val);
                         break;
                     case 'HASMORPH':
-                        if (!($val instanceof Closure)) throw new \Exception("Input {$val} must be closure function");
+                        if (!($val instanceof Closure)) throw new Exception("Input {$val} must be closure function");
                         $this->model = $this->model->whereHasMorph($field, $val);
                         break;
                     case 'DOESNTHAVE':
-                        if (!($val instanceof Closure)) throw new \Exception("Input {$val} must be closure function");
+                        if (!($val instanceof Closure)) throw new Exception("Input {$val} must be closure function");
                         $this->model = $this->model->whereDoesntHave($field, $val);
                         break;
                     case 'DOESNTHAVEMORPH':
-                        if (!($val instanceof Closure)) throw new \Exception("Input {$val} must be closure function");
+                        if (!($val instanceof Closure)) throw new Exception("Input {$val} must be closure function");
                         $this->model = $this->model->whereDoesntHaveMorph($field, $val);
                         break;
                     case 'BETWEEN':
-                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereBetween($field, $val);
                         break;
                     case 'BETWEENCOLUMNS':
-                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereBetweenColumns($field, $val);
                         break;
                     case 'NOTBETWEEN':
-                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereNotBetween($field, $val);
                         break;
                     case 'NOTBETWEENCOLUMNS':
-                        if (!is_array($val)) throw new \Exception("Input {$val} mus be an array");
+                        if (!is_array($val)) throw new Exception("Input {$val} mus be an array");
                         $this->model = $this->model->whereNotBetweenColumns($field, $val);
                         break;
                     case 'RAW':

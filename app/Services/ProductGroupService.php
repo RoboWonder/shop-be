@@ -34,13 +34,74 @@ class ProductGroupService
         return NULL;
     }
 
-    public function getList(array $data): array
+    public function getList(array $args): array
     {
-        return [];
+        $rows = $paging = [];
+
+        try {
+            if (!!$args['page']){
+                $page = (int)$args['page'];
+                $size = (int)$args['size'];
+
+                $paging = [
+                    'page' => $page,
+                    'size' => $size,
+                    'total' => 0,
+                    'last_page' => $page
+                ];
+
+                $data = $this->productGroupRepository->getModel()->where(['deleted' => '0'])->paginate($size, ['*'], 'page', $page);
+                if(!!$data){
+                    $paging = array_merge($paging, [
+                        'total' => $data->total(),
+                        'last_page' => $data->lastPage(),
+                    ]);
+
+                    $rows = $data->items();
+                }
+            } else {
+                $rows = $this->productGroupRepository->all();
+            }
+        }
+        catch (\Exception $e){
+            return [NULL, $paging, $e];
+        }
+
+        return [$rows, $paging, NULL];
     }
 
-    public function doUpdate(array $data): bool
+    public function doUpdate(int $id, array $data)
     {
-        return TRUE;
+        try {
+            $ok = $this->productGroupRepository->update($data, $id);
+            if(!$ok){
+                throw new \Exception(Message::ERR_SHOPBE_UPDATE_FAIL);
+            }
+        }
+        catch (\Exception $e){
+            return $e;
+        }
+
+        return NULL;
+    }
+
+    public function doDelete(string $id, bool $softDelete = TRUE)
+    {
+        try {
+            if($softDelete){
+                $ok = $this->productGroupRepository->update(['deleted' => '1'], $id);
+            }
+            else{
+                $ok = $this->productGroupRepository->deleteWhere(['id' => $id]);
+            }
+            if(!$ok){
+                throw new \Exception(Message::ERR_SHOPBE_DELETE_FAIL);
+            }
+        }
+        catch (\Exception $e){
+            return $e;
+        }
+
+        return NULL;
     }
 }

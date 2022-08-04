@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Api;
 use App\Constants\Message;
 use App\Services\ProductService;
 use Illuminate\Http\JsonResponse;
@@ -47,33 +48,81 @@ class ProductController extends Controller
 
     public function list(Request $request)
     {
+        $page = $request->get('page', Api::LIST_DEFAULT_PAGING_PAGE);
+        $size = $request->get('size', Api::LIST_DEFAULT_PAGING_SIZE);
+
+        list($rows, $paging, $err) = $this->productService->getList([
+            'page' => $page,
+            'size' => $size
+        ]);
+        if ($err instanceof \Exception){
+            return response()->json([
+                'success' => FALSE,
+                'data' => [
+                    'paging' => $paging,
+                    'rows' => []
+                ],
+                'message' => $err->getMessage()
+            ]);
+        }
+
         return response()->json([
             'success' => TRUE,
+            'data' => [
+                'paging' => $paging,
+                'rows' => $rows
+            ],
             'message' => ''
         ]);
     }
 
-    public function view(Request $request, string $id)
+    public function view(string $id)
     {
+        list($data, $err) = $this->productService->getView($id);
+        if ($err instanceof \Exception){
+            return response()->json([
+                'success' => FALSE,
+                'data' => [],
+                'message' => $err->getMessage()
+            ]);
+        }
+
         return response()->json([
             'success' => TRUE,
+            'data' => $data,
             'message' => ''
         ]);
     }
 
-    public function update(Request $request)
+    public function update(Request $request, int $id)
     {
+        $err = $this->productService->doUpdate($id, $request->only(['name', 'base_price', 'price', 'status', 'order']));
+        if ($err instanceof \Exception){
+            return response()->json([
+                'success' => FALSE,
+                'message' => $err->getMessage()
+            ]);
+        }
+
         return response()->json([
             'success' => TRUE,
-            'message' => ''
+            'message' => Message::MSG_SHOPBE_UPDATE_SUCCESS
         ]);
     }
 
-    public function delete(Request $request)
+    public function delete(string $id)
     {
+        $err = $this->productService->doDelete($id);
+        if ($err instanceof \Exception){
+            return response()->json([
+                'success' => FALSE,
+                'message' => $err->getMessage()
+            ]);
+        }
+
         return response()->json([
             'success' => TRUE,
-            'message' => ''
+            'message' => Message::MSG_SHOPBE_DELETE_SUCCESS
         ]);
     }
 }
