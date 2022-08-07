@@ -48,7 +48,13 @@ class ProductService
         $rows = [];
 
         try {
-            $data = $this->productRepository->getModel()->where(['deleted' => '0', 'status' => '1'])->paginate($size, ['*'], 'page', $page);
+            $model = $this->productRepository->getModel()->where(['deleted' => '0', 'status' => '1']);
+
+            if (isset($args['filters']) && is_array($args['filters'])){
+                $model = $model->where($args['filters']);
+            }
+
+            $data = $model->paginate($size, ['*'], 'page', $page);
             if(!!$data){
                 $paging = array_merge($paging, [
                     'total' => $data->total(),

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Constants\Api;
 use App\Constants\Message;
 use App\Services\ProductService;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -48,12 +47,27 @@ class ProductController extends Controller
 
     public function list(Request $request)
     {
+        if($request->has('filters')){
+            $validator = Validator::make($request->all(), [
+                'filters' => ['required', 'array'],
+            ]);
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => FALSE,
+                    'message' => Message::ERR_SHOPBE_WRONG_INFORMATION,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+        }
+
         $page = $request->get('page', Api::LIST_DEFAULT_PAGING_PAGE);
         $size = $request->get('size', Api::LIST_DEFAULT_PAGING_SIZE);
+        $filters = $request->get('filters', []);
 
         list($rows, $paging, $err) = $this->productService->getList([
             'page' => $page,
-            'size' => $size
+            'size' => $size,
+            'filters' => $filters
         ]);
         if ($err instanceof \Exception){
             return response()->json([
