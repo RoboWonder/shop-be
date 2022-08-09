@@ -24,6 +24,7 @@ class CreateUsersTable extends Migration
             $table->string('email_token'); // email verify token
             $table->boolean('verified')->default(false);
             $table->string('phone_number');
+            $table->enum('role', ['1', '2', '3'])->comment('1: supper-admin, 2: admin, 3: user');
             $table->timestamps();
         });
     }
