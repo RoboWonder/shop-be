@@ -7,17 +7,36 @@
 
 namespace App\Console\Commands;
 
+use App\Services\OrderService;
 use Illuminate\Console\Command;
 
 class DiscountCalculationCommand extends Command
 {
-    protected $name = 'shopbe:discount-calculation';
+    protected $signature = 'shopbe:discount-calculation {userId} {percent}';
 
     protected $description = "Discount calculation for crontab";
 
+    protected $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        parent::__construct();
+
+        $this->orderService = $orderService;
+    }
+
     public function handle()
     {
-        // need to ask this function and ...
-        // write something here.
+        $userId = (float)$this->argument('userId');
+        $percent = (float)$this->argument('percent');
+
+        $err = $this->orderService->calculateDiscount($userId, $percent);
+
+        if ($err !== NULL){
+            $this->error($err->getMessage());
+        }
+        else{
+            $this->info('Discount Calculated');
+        }
     }
 }

@@ -172,4 +172,41 @@ class OrderService
 
         return NULL;
     }
+
+    /***
+     * using in console command.
+     *
+     * @param int   $userId
+     * @param float $percent
+     *
+     * @return \Exception|null
+     * @since: 2022/08/09 21:47
+     */
+    public function calculateDiscount(int $userId, float $percent = 0.0)
+    {
+        try {
+            $orders = $this->orderRepository->findWhere(['deleted' => '0', 'status' => '0'], ['user_id', 'amount']);
+            if($orders->isNotEmpty()){
+                $totalAmount = doubleval($orders->sum('amount'));
+
+                $amountDiscounted = ($percent * $totalAmount) / 100;
+
+                if ($amountDiscounted > 0.0){
+                    $err = $this->transactionService->doCreate([
+                        'type' => Api::TRANSACTION_TYPE_DISCOUNT,
+                        'amount' => $amountDiscounted,
+                        'user_id' => $userId
+                    ]);
+
+                    if ($err !== NULL){
+                        throw $err;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            return $e;
+        }
+
+        return NULL;
+    }
 }
