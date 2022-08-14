@@ -28,6 +28,14 @@ $router->group(['middleware' => 'jwt-auth'], function () use ($router) {
     $router->get('product/groups', 'ProductGroupController@list');
     $router->put('product/groups/{id}', 'ProductGroupController@update');
     $router->delete('product/groups/{id}', 'ProductGroupController@delete');
+
+    $router->post('orders', 'OrderController@create');
+    $router->get('orders', 'OrderController@list');
+    $router->get('orders/{id}', 'OrderController@view');
+    $router->put('orders/{id}', 'OrderController@update');
+    $router->delete('orders/{id}', 'OrderController@delete');
+
+    $router->get('transactions', 'TransactionController@list');
 });
 
 $router->group(['middleware' => 'jwt-auth'], function ($router) {

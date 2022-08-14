@@ -4,23 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Constants\Api;
 use App\Constants\Message;
-use App\Services\ProductGroupService;
+use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class ProductGroupController extends Controller
+class OrderController extends Controller
 {
-    protected $productGroupService;
+    protected $orderService;
 
-    public function __construct(ProductGroupService $productGroupService)
+    public function __construct(OrderService $orderService)
     {
-        $this->productGroupService = $productGroupService;
+        $this->orderService = $orderService;
     }
 
     public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:255'],
+            'product_id' => ['required', 'numeric'],
+            'amount' => ['required', 'numeric'],
         ]);
 
         if ($validator->fails()) {
@@ -31,7 +32,7 @@ class ProductGroupController extends Controller
             ], 422);
         }
 
-        $err = $this->productGroupService->doCreate($request->only(['name', 'parent_id', 'order']));
+        $err = $this->orderService->doCreate($request->only(['product_id', 'amount', 'description']));
         if ($err instanceof \Exception){
             return response()->json([
                 'success' => FALSE,
@@ -64,7 +65,7 @@ class ProductGroupController extends Controller
         $size = $request->get('size', Api::LIST_DEFAULT_PAGING_SIZE);
         $filters = $request->get('filters', []);
 
-        list($rows, $paging, $err) = $this->productGroupService->getList([
+        list($rows, $paging, $err) = $this->orderService->getList([
             'page' => $page,
             'size' => $size,
             'filters' => $filters
@@ -92,7 +93,7 @@ class ProductGroupController extends Controller
 
     public function update(Request $request, int $id)
     {
-        $err = $this->productGroupService->doUpdate($id, $request->only(['name', 'order']));
+        $err = $this->orderService->doUpdate($id, array_filter($request->only(['product_id', 'amount', 'description'])));
         if ($err instanceof \Exception){
             return response()->json([
                 'success' => FALSE,
@@ -109,7 +110,7 @@ class ProductGroupController extends Controller
     public function delete(string $id, Request $request)
     {
         $forceDelete = $request->get('force', '0');
-        $err = $this->productGroupService->doDelete($id, $forceDelete === '0');
+        $err = $this->orderService->doDelete($id, $forceDelete === '0');
         if ($err instanceof \Exception){
             return response()->json([
                 'success' => FALSE,

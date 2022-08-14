@@ -8,21 +8,21 @@
 namespace App\Services;
 
 use App\Constants\Message;
-use App\Repositories\ProductGroupRepository;
+use App\Repositories\TransactionRepository;
 
-class ProductGroupService
+class TransactionService
 {
-    private $productGroupRepository;
+    private $transactionRepository;
 
-    public function __construct(ProductGroupRepository $productGroupRepository)
+    public function __construct(TransactionRepository $transactionRepository)
     {
-        $this->productGroupRepository = $productGroupRepository;
+        $this->transactionRepository = $transactionRepository;
     }
 
     public function doCreate(array $data)
     {
         try {
-            $ok = $this->productGroupRepository->create($data);
+            $ok = $this->transactionRepository->create($data);
             if(!$ok){
                 throw new \Exception(Message::ERR_SHOPBE_CREATE_FAIL);
             }
@@ -39,7 +39,7 @@ class ProductGroupService
         $rows = $paging = [];
 
         try {
-            $model = $this->productGroupRepository->getModel()->where(['deleted' => '0']);
+            $model = $this->transactionRepository->getModel()->where(['deleted' => '0']);
 
             if (isset($args['filters']) && is_array($args['filters'])){
                 $model = $model->where($args['filters']);
@@ -76,10 +76,43 @@ class ProductGroupService
         return [$rows, $paging, NULL];
     }
 
+    /***
+     * only get one by conditions
+     *
+     * @param array $conditions
+     *
+     * @return array
+     * @since: 2022/08/07 22:37
+     */
+    public function getViewBy(array $conditions): array
+    {
+        try {
+            $data = $this->transactionRepository->findWhere(array_merge($conditions, ['deleted' => '0']));
+            if($data->isEmpty()){
+                throw new \Exception(Message::ERR_SHOPBE_NO_DATA_FOUND);
+            }
+            $data = $data->first();
+        }
+        catch (\Exception $e){
+            return [NULL, $e];
+        }
+
+        return [$data, NULL];
+    }
+
+    /***
+     * now was using for product order updated.
+     *
+     * @param int   $id
+     * @param array $data
+     *
+     * @return \Exception|null
+     * @since: 2022/08/07 22:16
+     */
     public function doUpdate(int $id, array $data)
     {
         try {
-            $ok = $this->productGroupRepository->update($data, $id);
+            $ok = $this->transactionRepository->update($data, $id);
             if(!$ok){
                 throw new \Exception(Message::ERR_SHOPBE_UPDATE_FAIL);
             }
@@ -91,14 +124,23 @@ class ProductGroupService
         return NULL;
     }
 
+    /***
+     * Now was not using.
+     *
+     * @param string $id
+     * @param bool   $softDelete
+     *
+     * @return \Exception|null
+     * @since: 2022/08/07 22:37
+     */
     public function doDelete(string $id, bool $softDelete = TRUE)
     {
         try {
             if($softDelete){
-                $ok = $this->productGroupRepository->update(['deleted' => '1'], $id);
+                $ok = $this->transactionRepository->update(['deleted' => '1'], $id);
             }
             else{
-                $ok = $this->productGroupRepository->deleteWhere(['id' => $id]);
+                $ok = $this->transactionRepository->deleteWhere(['id' => $id]);
             }
             if(!$ok){
                 throw new \Exception(Message::ERR_SHOPBE_DELETE_FAIL);
