@@ -6,10 +6,11 @@
     "type": "project",
     "require": {
         "php": "^7.2.5",
+        "elasticsearch/elasticsearch": "^8.3",
         "illuminate/mail": "7.30.6",
+        "illuminate/notifications": "7.30.6",
         "laravel/lumen-framework": "^7.0",
-        "tymon/jwt-auth": "^1.0",
-        "illuminate/notifications": "7.30.6"
+        "tymon/jwt-auth": "^1.0"
     },
     "require-dev": {
         "fzaninotto/faker": "^1.9.1",

@@ -8,24 +8,35 @@
 namespace App\Services;
 
 use App\Constants\Message;
+use App\Repositories\EsTransactionRepository;
 use App\Repositories\TransactionRepository;
 
 class TransactionService
 {
     private $transactionRepository;
+    private $esTransactionRepository;
 
-    public function __construct(TransactionRepository $transactionRepository)
+    public function __construct(TransactionRepository $transactionRepository, EsTransactionRepository $esTransactionRepository)
     {
         $this->transactionRepository = $transactionRepository;
+        $this->esTransactionRepository = $esTransactionRepository;
     }
 
     public function doCreate(array $data)
     {
         try {
-            $ok = $this->transactionRepository->create($data);
-            if(!$ok){
+            $dataModel = $this->transactionRepository->firstOrNew($data);
+
+            if($dataModel->exists){
+                throw new \Exception(Message::ERR_SHOPBE_ALREADY_EXISTS);
+            }
+
+            if($dataModel->save()){
                 throw new \Exception(Message::ERR_SHOPBE_CREATE_FAIL);
             }
+
+            // create one item in elasticsearch.
+            $this->esTransactionRepository->syncOne($dataModel->toEsData());
         }
         catch (\Exception $e){
             return $e;
