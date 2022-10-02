@@ -107,10 +107,10 @@ class UserAuthService
      * @throws JWTException
      * @since: 2022/08/02 21:47
      */
-    public function doLogin(string $phone, string $password): array
+    public function doLogin(string $phone_number, string $password): array
     {
         try {
-            $user = $this->userRepository->findWhere(['phone_number' => $phone])->first();
+            $user = $this->userRepository->findWhere(['phone_number' => $phone_number])->first();
             if(!($user && $user->exists && $user->verified === 1)){
                 throw new \Exception('shopbe_must_verify_email');
             }
@@ -132,7 +132,7 @@ class UserAuthService
                 throw new \Exception(Message::ERR_SHOPBE_WRONG_INFORMATION);
             }
             else{*/
-                $jwtAttempt = compact('phone', 'password');
+                $jwtAttempt = compact('phone_number', 'password');
                 if (!$token = $this->jwt->attempt($jwtAttempt)) {
                     throw new \Exception('user_not_found');
                 }
