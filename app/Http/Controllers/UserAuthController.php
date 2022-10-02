@@ -26,23 +26,19 @@ class UserAuthController extends Controller
      */
     public function register(Request $request)
     {
-        $this->validate($request, ['email' => 'required|email', 'password' => 'required|min:6']);
-        $email = $request->input('email');
+        $this->validate($request, ['phone_number' => 'required', 'password' => 'required|min:6']);
+        // $email = $request->input('email');
+        $phone = $request->input('phone_number');
+        
+        if(!(str_starts_with($phone, '01') && strlen($phone) == 11 || ((str_starts_with($phone, '09') || str_starts_with($phone, '09')) && strlen($phone) == 10))){
 
-        if ($request->has(['username'])) {
-            $username = $request->input('username');
-        }
-        else {
-            list($username) = explode('@', $email);
         }
 
         try {
             $user = $this->userAuthService->doRegister([
-                'username' => $username,
-                'email' => $email,
                 'password' => $request->input('password'),
-                'phone_number' => $request->input('phone_number'),
-                'name' => $request->has(['name']) ? $request->input('name') : $username
+                'phone_number' => $request->input('phone_number')
+                // 'name' => $request->has(['name']) ? $request->input('name') : $username
             ]);
         } catch (\Exception $e){
             return response()->json([
@@ -101,12 +97,12 @@ class UserAuthController extends Controller
     public function login(Request $request)
     {
         $this->validate($request, [
-            'email' => 'required|email|max:255',
+            'phone_number' => 'required',
             'password' => 'required'
         ]);
 
         try {
-            list($loginType, $token) = $this->userAuthService->doLogin($request->email, $request->password);
+            list($loginType, $token) = $this->userAuthService->doLogin($request->phone_number, $request->password);
 
             if($loginType === UserAuthService::TYPE_LOGIN_TEMP){
                 return response()->json([

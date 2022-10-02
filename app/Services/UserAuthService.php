@@ -53,12 +53,12 @@ class UserAuthService
     {
         try {
             $user = new UserModel();
-            $user->username = $args['username'];
-            $user->name = $args['name'];
-            $user->email = $args['email'];
+            // $user->username = $args['username'];
+            // $user->name = $args['name'];
+            // $user->email = $args['email'];
             $user->password = Hash::make($args['password']);
             $user->phone_number = $args['phone_number'];
-            $user->email_token = base64_encode('TOKEN:' . $args['email']);
+            // $user->email_token = base64_encode('TOKEN:' . $args['email']);
 
             if (!$user->save()) {
                 throw new \Exception('shopbe_failure_created_user');
@@ -71,7 +71,7 @@ class UserAuthService
         }
 
         // send email to confirm here.
-        dispatch(new SendVerificationEmail($user));
+        //dispatch(new SendVerificationEmail($user));
 
         return $user;
     }
@@ -107,15 +107,15 @@ class UserAuthService
      * @throws JWTException
      * @since: 2022/08/02 21:47
      */
-    public function doLogin(string $email, string $password): array
+    public function doLogin(string $phone, string $password): array
     {
         try {
-            $user = $this->userRepository->findWhere(['email' => $email])->first();
+            $user = $this->userRepository->findWhere(['phone_number' => $phone])->first();
             if(!($user && $user->exists && $user->verified === 1)){
                 throw new \Exception('shopbe_must_verify_email');
             }
 
-            $reset = $this->userPasswordResetRepository->findWhere([
+            /*$reset = $this->userPasswordResetRepository->findWhere([
                 ['email', '=', $email],
                 ['created_at', '>', Carbon::now()->subMinute(config('auth.reminder.expire', 5))->format("Y-m-d H:i:s")]
             ])->first();
@@ -131,8 +131,8 @@ class UserAuthService
 
                 throw new \Exception(Message::ERR_SHOPBE_WRONG_INFORMATION);
             }
-            else{
-                $jwtAttempt = compact('email', 'password');
+            else{*/
+                $jwtAttempt = compact('phone_number', 'password');
                 if (!$token = $this->jwt->attempt($jwtAttempt)) {
                     throw new \Exception('user_not_found');
                 }
@@ -141,7 +141,7 @@ class UserAuthService
                 $user->save();
 
                 return [self::TYPE_LOGIN, $token];
-            }
+            //}
         } catch (JWTException $e) {
             if ($e instanceof JWTException){
                 throw new \Exception('failed_to_create_token');
