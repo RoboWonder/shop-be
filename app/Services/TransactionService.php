@@ -45,7 +45,7 @@ class TransactionService
         return NULL;
     }
 
-    public function getList(array $args): array
+    private function _getListFromSql(array $args): array
     {
         $rows = $paging = [];
 
@@ -85,6 +85,47 @@ class TransactionService
         }
 
         return [$rows, $paging, NULL];
+    }
+
+    private function _getListFromNoSql(array $args): array
+    {
+        $rows = $paging = [];
+
+        try {
+            if (!!$args['page']){
+                $page = (int)$args['page'];
+                $size = (int)$args['size'];
+
+                $paging = [
+                    'page' => $page,
+                    'size' => $size,
+                ];
+            }
+
+            list($total, $docs) = $this->esTransactionRepository->search(
+                $paging,
+                isset($args['filters']) && is_array($args['filters']) ? $args['filters'] : []
+            );
+
+            $paging['total'] = $total;
+            if($total > 0){
+                $paging['last_page'] = 0; //@todo
+                $rows = $docs;
+            }
+        }
+        catch (\Exception $e){
+            return [NULL, $paging, $e];
+        }
+
+        return [$rows, $paging, NULL];
+    }
+
+    public function getList(array $args, bool $isNoSql = FALSE): array
+    {
+        if($isNoSql){
+            return $this->_getListFromNoSql($args);
+        }
+        return $this->_getListFromSql($args);
     }
 
     /***

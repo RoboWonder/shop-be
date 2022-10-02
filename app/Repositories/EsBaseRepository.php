@@ -110,6 +110,38 @@ abstract class EsBaseRepository implements EsRepositoryInterface
         return FALSE;
     }
 
+    abstract public function getSearchBody(array $paging, array $options): array;
+
+    /***
+     * find documents by conditions.
+     *
+     * @param int   $page
+     * @param int   $limit
+     * @param array $options
+     *
+     * @return array
+     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
+     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     * @since: 2022/10/02 21:02
+     */
+    public function search(array $paging, array $options = []): array
+    {
+        $body = $this->getSearchBody($paging, $options);
+
+        $res = $this->client->search(['body' => $body]);
+
+        $total = 0;
+        $rows = [];
+        if ($res) {
+            $total = $res['hits']['total']['value'];
+            foreach ($res['hits']['hits'] as $hit) {
+                $rows[] = $hit['_source'];
+            }
+        }
+
+        return [$total, $rows];
+    }
+
     /***
      * just simplify inserting.
      *
