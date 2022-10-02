@@ -102,7 +102,7 @@ class UserAuthController extends Controller
         ]);
 
         try {
-            list($loginType, $token) = $this->userAuthService->doLogin($request->phone_number, $request->password);
+            list($loginType, $token) = $this->userAuthService->doLogin($request->input('phone_number'), $request->>input('password'));
 
             if($loginType === UserAuthService::TYPE_LOGIN_TEMP){
                 return response()->json([
