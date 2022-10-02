@@ -19,6 +19,8 @@ interface EsRepositoryInterface
 
     public function insert(string $docId, array $data);
 
+    public function search(array $paging, array $options): array;
+
     public function searchById($id);
 
     public function update(string $docId, array $data);

@@ -40,7 +40,7 @@ class TransactionController extends Controller
             'page' => $page,
             'size' => $size,
             'filters' => $filters
-        ]);
+        ], TRUE);
         if ($err instanceof \Exception){
             return response()->json([
                 'success' => FALSE,
