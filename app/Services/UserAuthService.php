@@ -132,7 +132,7 @@ class UserAuthService
                 throw new \Exception(Message::ERR_SHOPBE_WRONG_INFORMATION);
             }
             else{*/
-                $jwtAttempt = compact('phone_number', 'password');
+                $jwtAttempt = compact('phone', 'password');
                 if (!$token = $this->jwt->attempt($jwtAttempt)) {
                     throw new \Exception('user_not_found');
                 }
